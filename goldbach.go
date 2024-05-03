@@ -69,30 +69,41 @@ func contains(arr []int, num int) bool {
 
 // Main function where the program starts. Used to read from the "data.txt" file.
 func main() {
-	data, _ := readfile("data.txt")
-
-	// Loop to calculate the max number in the data set.
-	maxNumber := 0
-	for _, num := range data {
-		if num > maxNumber {
-			maxNumber = num
+	// Check if command-line arguments are provided.
+	if len(os.Args) > 1 {
+		// Read data from the file specified in the command-line argument.
+		filename := os.Args[1]
+		data, _ := readfile(filename)
+		maxNumber := 0
+		for _, num := range data {
+			if num > maxNumber {
+				maxNumber = num
+			}
 		}
-	}
-
-	// Use the getPrimes function to retrieve all prime numbers up to our max &
-	// store it in primes.
-	primes := getPrimes(maxNumber)
-
-	for _, value := range data {
-		goldbachPairs := goldbach(value, primes)
-		fmt.Printf("We found %d Goldbach pair(s) for %d:\n", len(goldbachPairs), value)
-
-		// Print the output of every Goldbach pair in the format of the "results.txt" file.
-		for _, pair := range goldbachPairs {
-			difference := value - pair
-			fmt.Printf("%d = %d + %d\n", value, pair, difference)
+		primes := getPrimes(maxNumber)
+		for _, value := range data {
+			goldbachPairs := goldbach(value, primes)
+			fmt.Printf("We found %d Goldbach pair(s) for %d:\n", len(goldbachPairs), value)
+			for _, pair := range goldbachPairs {
+				difference := value - pair
+				fmt.Printf("%d = %d + %d\n", value, pair, difference)
+			}
+			fmt.Println()
 		}
-		fmt.Println()
+	} else {
+		// If no command-line arguments are provided, use demonstration input values.
+		demoValues := []int{3, 4, 14, 26, 100}
+		maxNumber := 100 // Assuming the maximum value is 100 for demonstration
+		primes := getPrimes(maxNumber)
+		for _, value := range demoValues {
+			goldbachPairs := goldbach(value, primes)
+			fmt.Printf("We found %d Goldbach pair(s) for %d:\n", len(goldbachPairs), value)
+			for _, pair := range goldbachPairs {
+				difference := value - pair
+				fmt.Printf("%d = %d + %d\n", value, pair, difference)
+			}
+			fmt.Println()
+		}
 	}
 }
 
