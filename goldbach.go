@@ -5,43 +5,54 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 )
 
-// getPrimes is a method that iterates through all numbers up to the MAX number in the
-// data set to retrieve all the prime numbers.
+// getPrimes generates prime numbers concurrently up to the "maxNumber".
 func getPrimes(maxNumber int) []int {
 
-	// Initialize a list containing our prime numbers.
-	var primes []int
+	primes := make(chan int) // Channel to send prime numbers.
+	var primeSlice []int     // Slice(list) to store the prime numbers.
+	var wg sync.WaitGroup    // Wait group to synchronize goroutines.
 
-	// Iterate from 2 to the MAX number in our data set, incrementing value by 1.
-	for value := 2; value <= maxNumber; value++ {
-		isPrime := true
+	// Start a goroutine to generate prime numbers.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()     // Mark this goroutine as done.
+		defer close(primes) // Close the channel when done.
 
-		// For each prime number in the list primes [], if the current iterator (value) is evenly
-		// divisible by any number in primes[], the number is not prime.
-		for _, prime := range primes {
-			if value%prime == 0 {
-				isPrime = false
-				break
+		// Generate prime numbers and send them to the channel.
+		primes <- 2 // First prime number.
+		for num := 3; num <= maxNumber; num += 2 {
+			isPrime := true
+			for i := 2; i*i <= num; i++ { // Check divisibility up to the square root of (num).
+				if num%i == 0 { // If it's divisible, it's not prime.
+					isPrime = false
+					break
+				}
+			}
+			if isPrime {
+				primes <- num // Send to the channel if it's a prime.
 			}
 		}
+	}()
 
-		// If the number is prime, append to our list primes[].
-		if isPrime {
-			primes = append(primes, value)
-		}
+	// Take from the channel & build the list of primes.
+	for prime := range primes {
+		primeSlice = append(primeSlice, prime) // Add to the list.
 	}
-	return primes
+
+	wg.Wait()         // Wait until all goroutines complete before proceeding.
+	return primeSlice // Return the list of primes.
 }
 
 // The Goldbach function finds Goldbach pairs for the current value
-// using our list of prime numbers in primes[].
+// using our list of prime numbers.
 func goldbach(value int, primes []int) []int {
 	var result []int
-	if value >= 4 && value%2 == 0 {
+	if value >= 4 && value%2 == 0 { // Only even numbers.
 		for _, prime := range primes {
-			if prime > value/2 {
+			if prime > value/2 { // No valid pairs beyond `value / 2`
 				break
 			}
 
@@ -57,7 +68,7 @@ func goldbach(value int, primes []int) []int {
 }
 
 // contains is a method used for checking if the current number
-// is present in a given array.
+// is in a given slice.
 func contains(arr []int, num int) bool {
 	for _, v := range arr {
 		if v == num {
@@ -67,10 +78,12 @@ func contains(arr []int, num int) bool {
 	return false
 }
 
-// Main function where the program starts. Used to read from the "data.txt" file.
+// Main function to calculate Goldbach pairs. Used to read from the "data.txt" file.
 func main() {
+
 	// Check if command-line arguments are provided.
 	if len(os.Args) > 1 {
+
 		// Read data from the file specified in the command-line argument.
 		filename := os.Args[1]
 		data, _ := readfile(filename)
@@ -80,7 +93,11 @@ func main() {
 				maxNumber = num
 			}
 		}
+
+		// Generate primes concurrently.
 		primes := getPrimes(maxNumber)
+
+		// Calculate Goldbach pairs.
 		for _, value := range data {
 			goldbachPairs := goldbach(value, primes)
 			fmt.Printf("We found %d Goldbach pair(s) for %d:\n", len(goldbachPairs), value)
@@ -90,12 +107,16 @@ func main() {
 			}
 			fmt.Println()
 		}
+
 	} else {
-		// If no command-line arguments are provided, use demonstration input values.
-		demoValues := []int{3, 4, 14, 26, 100}
-		maxNumber := 100 // Assuming the maximum value is 100 for demonstration
+
+		// If no command-line arguments are provided, use default values.
+		data := []int{3, 4, 14, 26, 100}
+		maxNumber := 100 // Assuming the maximum value is 100 for demonstration.
 		primes := getPrimes(maxNumber)
-		for _, value := range demoValues {
+
+		// Calculate Goldbach pairs.
+		for _, value := range data {
 			goldbachPairs := goldbach(value, primes)
 			fmt.Printf("We found %d Goldbach pair(s) for %d:\n", len(goldbachPairs), value)
 			for _, pair := range goldbachPairs {
@@ -107,18 +128,16 @@ func main() {
 	}
 }
 
-// Function to scan line by line & convert each item to an integer,
-// appending them to a list called data.
+// Function to read data from a file.
 func readfile(filename string) ([]int, error) {
 	var data []int
-	file, _ := os.Open(filename)
+	file, _ := os.Open(filename) // Assume successful file opening.
 	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(file) // Use scanner to read lines.
 	for scanner.Scan() {
 		line := scanner.Text()
-		num, _ := strconv.Atoi(line)
-		data = append(data, num)
+		num, _ := strconv.Atoi(line) // Ignore conversion errors.
+		data = append(data, num)     // Add to the data slice.
 	}
 
 	return data, nil
