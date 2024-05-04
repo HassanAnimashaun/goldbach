@@ -80,65 +80,53 @@ func contains(arr []int, num int) bool {
 
 // Main function to calculate Goldbach pairs. Used to read from the "data.txt" file.
 func main() {
+	// Read data from the "data.txt" file.
+	data, err := readfile("data.txt")
 
-	// Check if command-line arguments are provided.
-	if len(os.Args) > 1 {
+	// If there's an error reading "data.txt" or it doesn't exist, use default values.
+	if err != nil || len(data) == 0 {
+		data = []int{3, 4, 14, 26, 100}
+	}
 
-		// Read data from the file specified in the command-line argument.
-		filename := os.Args[1]
-		data, _ := readfile(filename)
-		maxNumber := 0
-		for _, num := range data {
-			if num > maxNumber {
-				maxNumber = num
-			}
+	maxNumber := 0
+	for _, num := range data {
+		if num > maxNumber {
+			maxNumber = num
 		}
+	}
 
-		// Generate primes concurrently.
-		primes := getPrimes(maxNumber)
+	primes := getPrimes(maxNumber)
 
-		// Calculate Goldbach pairs.
-		for _, value := range data {
-			goldbachPairs := goldbach(value, primes)
-			fmt.Printf("We found %d Goldbach pair(s) for %d:\n", len(goldbachPairs), value)
-			for _, pair := range goldbachPairs {
-				difference := value - pair
-				fmt.Printf("%d = %d + %d\n", value, pair, difference)
-			}
-			fmt.Println()
+	for _, value := range data {
+		goldbachPairs := goldbach(value, primes)
+		fmt.Printf("We found %d Goldbach pair(s) for %d:\n", len(goldbachPairs), value)
+		for _, pair := range goldbachPairs {
+			difference := value - pair
+			fmt.Printf("%d = %d + %d\n", value, pair, difference)
 		}
-
-	} else {
-
-		// If no command-line arguments are provided, use default values.
-		data := []int{3, 4, 14, 26, 100}
-		maxNumber := 100 // Assuming the maximum value is 100 for demonstration.
-		primes := getPrimes(maxNumber)
-
-		// Calculate Goldbach pairs.
-		for _, value := range data {
-			goldbachPairs := goldbach(value, primes)
-			fmt.Printf("We found %d Goldbach pair(s) for %d:\n", len(goldbachPairs), value)
-			for _, pair := range goldbachPairs {
-				difference := value - pair
-				fmt.Printf("%d = %d + %d\n", value, pair, difference)
-			}
-			fmt.Println()
-		}
+		fmt.Println()
 	}
 }
 
 // Function to read data from a file.
 func readfile(filename string) ([]int, error) {
 	var data []int
-	file, _ := os.Open(filename) // Assume successful file opening.
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
 	defer file.Close()
-	scanner := bufio.NewScanner(file) // Use scanner to read lines.
+	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
-		num, _ := strconv.Atoi(line) // Ignore conversion errors.
-		data = append(data, num)     // Add to the data slice.
+		num, err := strconv.Atoi(line)
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, num)
 	}
-
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
 	return data, nil
 }
