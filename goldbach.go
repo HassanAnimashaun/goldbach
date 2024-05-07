@@ -52,7 +52,7 @@ func goldbach(value int, primes []int) []int {
 	var result []int
 	if value >= 4 && value%2 == 0 { // Only even numbers.
 		for _, prime := range primes {
-			if prime > value/2 { // No valid pairs beyond `value / 2`
+			if prime > value/2 { // No valid pairs beyond value / 2
 				break
 			}
 
@@ -80,53 +80,65 @@ func contains(arr []int, num int) bool {
 
 // Main function to calculate Goldbach pairs. Used to read from the "data.txt" file.
 func main() {
-	// Read data from the "data.txt" file.
-	data, err := readfile("data.txt")
 
-	// If there's an error reading "data.txt" or it doesn't exist, use default values.
-	if err != nil || len(data) == 0 {
-		data = []int{3, 4, 14, 26, 100}
-	}
+	// Check if command-line arguments are provided.
+	if len(os.Args) > 1 {
 
-	maxNumber := 0
-	for _, num := range data {
-		if num > maxNumber {
-			maxNumber = num
+		// Read data from the file specified in the command-line argument.
+		filename := os.Args[1]
+		data, _ := readfile(filename)
+		maxNumber := 0
+		for _, num := range data {
+			if num > maxNumber {
+				maxNumber = num
+			}
 		}
-	}
 
-	primes := getPrimes(maxNumber)
+		// Generate primes concurrently.
+		primes := getPrimes(maxNumber)
 
-	for _, value := range data {
-		goldbachPairs := goldbach(value, primes)
-		fmt.Printf("We found %d Goldbach pair(s) for %d:\n", len(goldbachPairs), value)
-		for _, pair := range goldbachPairs {
-			difference := value - pair
-			fmt.Printf("%d = %d + %d\n", value, pair, difference)
+		// Calculate Goldbach pairs.
+		for _, value := range data {
+			goldbachPairs := goldbach(value, primes)
+			fmt.Printf("We found %d Goldbach pair(s) for %d:\n", len(goldbachPairs), value)
+			for _, pair := range goldbachPairs {
+				difference := value - pair
+				fmt.Printf("%d = %d + %d\n", value, pair, difference)
+			}
+			fmt.Println()
 		}
-		fmt.Println()
+
+	} else {
+
+		// If no command-line arguments are provided, use default values.
+		data := []int{3, 4, 14, 26, 100}
+		maxNumber := 100 // Assuming the maximum value is 100 for demonstration.
+		primes := getPrimes(maxNumber)
+
+		// Calculate Goldbach pairs.
+		for _, value := range data {
+			goldbachPairs := goldbach(value, primes)
+			fmt.Printf("We found %d Goldbach pair(s) for %d:\n", len(goldbachPairs), value)
+			for _, pair := range goldbachPairs {
+				difference := value - pair
+				fmt.Printf("%d = %d + %d\n", value, pair, difference)
+			}
+			fmt.Println()
+		}
 	}
 }
 
 // Function to read data from a file.
 func readfile(filename string) ([]int, error) {
 	var data []int
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
+	file, _ := os.Open(filename) // Assume successful file opening.
 	defer file.Close()
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(file) // Use scanner to read lines.
 	for scanner.Scan() {
 		line := scanner.Text()
-		num, err := strconv.Atoi(line)
-		if err != nil {
-			return nil, err
-		}
-		data = append(data, num)
+		num, _ := strconv.Atoi(line) // Ignore conversion errors.
+		data = append(data, num)     // Add to the data slice.
 	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
+
 	return data, nil
 }
